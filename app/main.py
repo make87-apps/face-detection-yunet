@@ -1,18 +1,34 @@
-import time
-from datetime import datetime
-
-from make87_messages.text.PlainText_pb2 import PlainText
+import cv2
+import numpy as np
+from make87_messages.image.ImageJPEG_pb2 import ImageJPEG
+from make87_messages.geometry.BoundingBox2D_pb2 import AxisAlignedBoundingBox2DFloat
 from make87 import get_topic, PublisherTopic
 
 
 def main():
-    topic = get_topic(name="my_message")
+    image_topic = get_topic(name="image_data")
+    bbox_2d_topic = get_topic(name="bbox_2d_data")
+    face_detector = cv2.FaceDetectorYN.create(model="face_detection_yunet_2023mar.onnx", config="", input_size=(0, 0))
 
-    while True:
-        message = PlainText(body=f"Hello, World! Current date and time is {datetime.now()}.")
-        topic.publish(message)
-        print(f"Published: {message}")
-        time.sleep(1)
+    def callback(message: bytes):
+        image_msg = ImageJPEG()
+        image_msg.ParseFromString(message)
+        image = cv2.imdecode(np.frombuffer(image_msg.data, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+        print(f"Received image with shape: {image.shape}")
+
+        height, width, _ = image.shape
+        face_detector.setInputSize((width, height))
+
+        _, faces = face_detector.detect(image)
+        faces = faces if faces is not None else []
+        for face in faces:
+            bbox_2d = AxisAlignedBoundingBox2DFloat(
+                timestamp=image_msg.timestamp, x=face[0], y=face[1], width=face[2], height=face[3]
+            )
+            bbox_2d_topic.publish(bbox_2d)
+            print(f"Published bounding box: {bbox_2d}")
+
+    image_topic.subscribe(callback)
 
 
 if __name__ == "__main__":
