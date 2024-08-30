@@ -1,0 +1,10 @@
+build_kit:
+  name: python3
+  version: 0.0
+topics:
+  - name: IMAGE_DATA
+    message_type: make87.image.ImageJPEG.ImageJPEG
+    type: SUB
+  - name: BOUNDING_BOX_2D
+    message_type: make87.geometry.BoundingBox2D.AxisAlignedBoundingBox2DFloat
+    type: PUB
