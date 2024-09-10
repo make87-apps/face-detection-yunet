@@ -1,3 +1,5 @@
+import os
+
 import cv2
 import numpy as np
 from make87_messages.image.ImageJPEG_pb2 import ImageJPEG
@@ -8,7 +10,10 @@ from make87 import get_topic, topic_names, PublisherTopic
 def main():
     image_topic = get_topic(name=topic_names.IMAGE_DATA)
     bbox_2d_topic = get_topic(name=topic_names.BOUNDING_BOX_2D)
-    face_detector = cv2.FaceDetectorYN.create(model="face_detection_yunet_2023mar.onnx", config="", input_size=(0, 0))
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(script_dir, "face_detection_yunet_2023mar.onnx")
+    face_detector = cv2.FaceDetectorYN.create(model=model_path, config="", input_size=(0, 0))
 
     def callback(message: ImageJPEG):
         image = cv2.imdecode(np.frombuffer(message.data, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
