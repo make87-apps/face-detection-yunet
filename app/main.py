@@ -1,10 +1,11 @@
+import logging
 import os
 
 import cv2
 import numpy as np
 from make87_messages.image.ImageJPEG_pb2 import ImageJPEG
 from make87_messages.geometry.BoundingBox2D_pb2 import AxisAlignedBoundingBox2DFloat
-from make87 import get_topic, topic_names, PublisherTopic
+from make87 import get_topic, topic_names, PublisherTopic, MessageMetadata
 
 
 def main():
@@ -15,9 +16,9 @@ def main():
     model_path = os.path.join(script_dir, "face_detection_yunet_2023mar.onnx")
     face_detector = cv2.FaceDetectorYN.create(model=model_path, config="", input_size=(0, 0))
 
-    def callback(message: ImageJPEG):
+    def callback(message: ImageJPEG, metadata: MessageMetadata):
         image = cv2.imdecode(np.frombuffer(message.data, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
-        print(f"Received image with shape: {image.shape}")
+        logging.info(f"Received image with shape: {image.shape}")
 
         height, width, _ = image.shape
         face_detector.setInputSize((width, height))
@@ -29,7 +30,7 @@ def main():
                 timestamp=message.timestamp, x=face[0], y=face[1], width=face[2], height=face[3]
             )
             bbox_2d_topic.publish(bbox_2d)
-            print(f"Published bounding box: {bbox_2d}")
+            logging.info(f"Published bounding box: {bbox_2d}")
 
     image_topic.subscribe(callback)
 
