@@ -12,7 +12,7 @@ dependencies = [
     "make87",
     "make87_messages",
     "numpy",
-    "opencv-python-headless",
+    "opencv-python",
 ]
 description = "A small example package"
 readme = "README.md"
