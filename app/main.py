@@ -3,8 +3,8 @@ import os
 
 import cv2
 import numpy as np
-from make87_messages.image.ImageJPEG_pb2 import ImageJPEG
-from make87_messages.geometry.BoundingBox2D_pb2 import AxisAlignedBoundingBox2DFloat
+from make87_messages.image.compressed.image_jpeg_pb2 import ImageJPEG
+from make87_messages.geometry.box.box_2d_pb2 import Box2DAxisAligned
 from make87 import get_topic, topic_names, PublisherTopic, MessageMetadata
 
 
@@ -26,9 +26,7 @@ def main():
         _, faces = face_detector.detect(image)
         faces = faces if faces is not None else []
         for face in faces:
-            bbox_2d = AxisAlignedBoundingBox2DFloat(
-                timestamp=message.timestamp, x=face[0], y=face[1], width=face[2], height=face[3]
-            )
+            bbox_2d = Box2DAxisAligned(timestamp=message.timestamp, x=face[0], y=face[1], width=face[2], height=face[3])
             bbox_2d_topic.publish(bbox_2d)
             logging.info(f"Published bounding box: {bbox_2d}")
 
