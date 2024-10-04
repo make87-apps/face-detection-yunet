@@ -5,10 +5,11 @@ import cv2
 import numpy as np
 from make87_messages.image.compressed.image_jpeg_pb2 import ImageJPEG
 from make87_messages.geometry.box.box_2d_pb2 import Box2DAxisAligned
-from make87 import get_topic, topic_names, PublisherTopic, MessageMetadata
+from make87 import get_topic, topic_names, PublisherTopic, MessageMetadata, initialize
 
 
 def main():
+    initialize()
     image_topic = get_topic(name=topic_names.IMAGE_DATA)
     bbox_2d_topic = get_topic(name=topic_names.BOUNDING_BOX_2D)
 
