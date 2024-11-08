@@ -3,7 +3,7 @@ from importlib.resources import files
 
 import cv2
 import numpy as np
-from make87 import initialize, get_subscriber_topic, get_publisher_topic, resolve_topic_name
+from make87 import initialize, get_subscriber, get_publisher, resolve_topic_name
 from make87_messages.geometry.box.box_2d_pb2 import Box2DAxisAligned
 from make87_messages.image.compressed.image_jpeg_pb2 import ImageJPEG
 
@@ -12,8 +12,8 @@ def main():
     initialize()
     image_topic_name = resolve_topic_name(name="IMAGE_DATA")
     bbox_2d_topic_name = resolve_topic_name(name="BOUNDING_BOX_2D")
-    image_topic = get_subscriber_topic(name=image_topic_name, message_type=ImageJPEG)
-    bbox_2d_topic = get_publisher_topic(name=bbox_2d_topic_name, message_type=Box2DAxisAligned)
+    image_topic = get_subscriber(name=image_topic_name, message_type=ImageJPEG)
+    bbox_2d_topic = get_publisher(name=bbox_2d_topic_name, message_type=Box2DAxisAligned)
 
     model_path = files("app") / "res" / "face_detection_yunet_2023mar.onnx"
     face_detector = cv2.FaceDetectorYN.create(model=str(model_path), config="", input_size=(0, 0))
