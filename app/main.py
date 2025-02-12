@@ -3,17 +3,15 @@ from importlib.resources import files
 
 import cv2
 import numpy as np
-from make87 import initialize, get_subscriber, get_publisher, resolve_topic_name
-from make87_messages.geometry.box.box_2d_pb2 import Box2DAxisAligned
+import make87 as m87
+from make87_messages.geometry.box.box_2d_aligned_pb2 import Box2DAxisAligned
 from make87_messages.image.compressed.image_jpeg_pb2 import ImageJPEG
-
+from make87_messages.core.header_pb2 import Header
 
 def main():
-    initialize()
-    image_topic_name = resolve_topic_name(name="IMAGE_DATA")
-    bbox_2d_topic_name = resolve_topic_name(name="BOUNDING_BOX_2D")
-    image_topic = get_subscriber(name=image_topic_name, message_type=ImageJPEG)
-    bbox_2d_topic = get_publisher(name=bbox_2d_topic_name, message_type=Box2DAxisAligned)
+    m87.initialize()
+    image_topic = m87.get_subscriber(name="IMAGE_DATA", message_type=ImageJPEG)
+    bbox_2d_topic = m87.get_publisher(name="BOUNDING_BOX_2D", message_type=Box2DAxisAligned)
 
     model_path = files("app") / "res" / "face_detection_yunet_2023mar.onnx"
     face_detector = cv2.FaceDetectorYN.create(model=str(model_path), config="", input_size=(0, 0))
@@ -26,13 +24,17 @@ def main():
         face_detector.setInputSize((width, height))
 
         _, faces = face_detector.detect(image)
+
+
         faces = faces if faces is not None else []
         for face in faces:
-            bbox_2d = Box2DAxisAligned(timestamp=message.timestamp, x=face[0], y=face[1], width=face[2], height=face[3])
+            header = m87.header_from_message(header_cls=Header, message=message, append_entity_path="face", set_current_time=True)
+            bbox_2d = Box2DAxisAligned(x=face[0], y=face[1], width=face[2], height=face[3], header=header)
             bbox_2d_topic.publish(bbox_2d)
             logging.info(f"Published bounding box: {bbox_2d}")
 
     image_topic.subscribe(callback)
+    m87.loop()
 
 
 if __name__ == "__main__":
