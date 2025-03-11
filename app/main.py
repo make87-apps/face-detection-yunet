@@ -10,10 +10,8 @@ from make87_messages.image.compressed.image_jpeg_pb2 import ImageJPEG
 
 def main():
     initialize()
-    image_topic_name = resolve_topic_name(name="IMAGE_DATA")
-    bbox_2d_topic_name = resolve_topic_name(name="BOUNDING_BOX_2D")
-    image_topic = get_subscriber(name=image_topic_name, message_type=ImageJPEG)
-    bbox_2d_topic = get_publisher(name=bbox_2d_topic_name, message_type=Box2DAxisAligned)
+    image_topic = get_subscriber(name="IMAGE_DATA", message_type=ImageJPEG)
+    bbox_2d_topic = get_publisher(name="BOUNDING_BOX_2D", message_type=Box2DAxisAligned)
 
     model_path = files("app") / "res" / "face_detection_yunet_2023mar.onnx"
     face_detector = cv2.FaceDetectorYN.create(model=str(model_path), config="", input_size=(0, 0))
