@@ -6,4 +6,5 @@ inbound_topics:
     message_type: make87_messages.image.compressed.image_jpeg.ImageJPEG
 outbound_topics:
   - name: BOUNDING_BOX_2D
-    message_type: make87_messages.geometry.box.box_2d.Box2DAxisAligned
+    message_type: make87_messages.geometry.box.box_2d_aligned.Box2DAxisAligned
+  
