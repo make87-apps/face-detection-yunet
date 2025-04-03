@@ -6,13 +6,13 @@ build-backend = "setuptools.build_meta"
 name = "app"
 version = "0.0.1"
 authors = [
-    { name = "Nisse Knudsen", email = "nisse.knudsen@gmail.com" },
+    { name = "Nisse Knudsen", email = "nisse@make87.com" },
 ]
 dependencies = [
     "make87",
     "make87_messages",
+    "opencv-python-headless>=4.10.0.84,<5.0",
     "numpy",
-    "opencv-python-headless",
 ]
 description = "A small example package"
 readme = "README.md"
