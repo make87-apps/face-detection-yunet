@@ -13,23 +13,27 @@ from make87_messages.core.header_pb2 import Header
 def main():
     make87.initialize()
     image_topic = make87.get_subscriber(name="IMAGE_DATA", message_type=ImageJPEG)
-    bbox_2d_topic = make87.get_publisher(
-        name="BOUNDING_BOX_2D", message_type=Boxes2DAxisAligned
-    )
+    bbox_2d_topic = make87.get_publisher(name="BOUNDING_BOX_2D", message_type=Boxes2DAxisAligned)
 
     model_path = files("app") / "res" / "face_detection_yunet_2023mar.onnx"
-    face_detector = cv2.FaceDetectorYN.create(
-        model=str(model_path), config="", input_size=(0, 0)
-    )
+    face_detector = cv2.FaceDetectorYN.create(model=str(model_path), config="", input_size=(0, 0))
+
+    previous_input_size = None
 
     def callback(message: ImageJPEG):
-        image = cv2.imdecode(
-            np.frombuffer(message.data, dtype=np.uint8), cv2.IMREAD_UNCHANGED
-        )
-        logging.info(f"Received image with shape: {image.shape}")
+        nonlocal previous_input_size
+
+        image = cv2.imdecode(np.frombuffer(message.data, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
 
         height, width, _ = image.shape
-        face_detector.setInputSize((width, height))
+        new_width = 640
+        new_height = int((new_width / width) * height)
+        new_input_size = (new_width, new_height)
+
+        if previous_input_size != new_input_size:
+            face_detector.setInputSize(new_input_size)
+            previous_input_size = new_input_size
+            logging.debug(f"Set input size to {new_input_size}")
 
         _, faces = face_detector.detect(image)
 
