@@ -18,24 +18,38 @@ def main():
     model_path = files("app") / "res" / "face_detection_yunet_2023mar.onnx"
     face_detector = cv2.FaceDetectorYN.create(model=str(model_path), config="", input_size=(0, 0))
 
+    # Cache variables
+    previous_orig_size = None
     previous_input_size = None
+    scale_matrix = None
 
     def callback(message: ImageJPEG):
-        nonlocal previous_input_size
+        nonlocal previous_orig_size, previous_input_size, scale_matrix
 
         image = cv2.imdecode(np.frombuffer(message.data, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+        orig_height, orig_width, _ = image.shape
 
-        height, width, _ = image.shape
-        new_width = 640
-        new_height = int((new_width / width) * height)
-        new_input_size = (new_width, new_height)
+        # Check if we need to update anything
+        if previous_orig_size != (orig_width, orig_height):
+            target_width = 640
+            target_height = int((target_width / orig_width) * orig_height)
+            previous_input_size = (target_width, target_height)
+            previous_orig_size = (orig_width, orig_height)
 
-        if previous_input_size != new_input_size:
-            face_detector.setInputSize(new_input_size)
-            previous_input_size = new_input_size
-            logging.debug(f"Set input size to {new_input_size}")
+            face_detector.setInputSize(previous_input_size)
+            scale_matrix = np.array(
+                [
+                    orig_width / target_width,
+                    orig_height / target_height,
+                    orig_width / target_width,
+                    orig_height / target_height,
+                ]
+            )
+            logging.debug(f"Updated detector input size: {previous_input_size}")
+            logging.debug(f"Updated scale matrix: {scale_matrix}")
 
-        _, faces = face_detector.detect(image)
+        resized = cv2.resize(image, previous_input_size)
+        _, faces = face_detector.detect(resized)
 
         header = make87.header_from_message(
             header_cls=Header,
@@ -44,7 +58,9 @@ def main():
             set_current_time=True,
         )
 
-        if faces is not None:
+        if faces is not None and len(faces) > 0:
+            faces[:, :4] *= scale_matrix  # Fast vectorized scaling
+
             bboxes_2d = Boxes2DAxisAligned(header=header, boxes=[])
             for i, face in enumerate(faces):
                 bbox_2d = Box2DAxisAligned(
@@ -54,14 +70,15 @@ def main():
                     height=face[3],
                     header=make87.header_from_message(
                         header_cls=Header,
-                        message=bboxes_2d,
+                        message=header,
                         append_entity_path=f"{i}",
                         set_current_time=False,
                     ),
                 )
                 bboxes_2d.boxes.append(bbox_2d)
+
             bbox_2d_topic.publish(bboxes_2d)
-            logging.info(f"Published bounding boxes: {bboxes_2d}")
+            logging.info(f"Published {len(bboxes_2d.boxes)} bounding boxes")
 
     image_topic.subscribe(callback)
     make87.loop()
