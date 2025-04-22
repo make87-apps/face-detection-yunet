@@ -13,7 +13,7 @@ from make87_messages.core.header_pb2 import Header
 def main():
     make87.initialize()
     image_topic = make87.get_subscriber(name="IMAGE_DATA", message_type=ImageJPEG)
-    bbox_2d_topic = make87.get_publisher(name="BOUNDING_BOX_2D", message_type=Boxes2DAxisAligned)
+    bbox_2d_topic = make87.get_publisher(name="BOUNDING_BOXES_2D", message_type=Boxes2DAxisAligned)
 
     model_path = files("app") / "res" / "face_detection_yunet_2023mar.onnx"
     face_detector = cv2.FaceDetectorYN.create(model=str(model_path), config="", input_size=(0, 0))

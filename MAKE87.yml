@@ -5,6 +5,6 @@ inbound_topics:
   - name: IMAGE_DATA
     message_type: make87_messages.image.compressed.image_jpeg.ImageJPEG
 outbound_topics:
-  - name: BOUNDING_BOX_2D
+  - name: BOUNDING_BOXES_2D
     message_type: make87_messages.geometry.box.boxes_2d_aligned.Boxes2DAxisAligned
 
