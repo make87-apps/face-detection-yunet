@@ -70,7 +70,7 @@ def main():
                     height=face[3],
                     header=make87.header_from_message(
                         header_cls=Header,
-                        message=header,
+                        message=bboxes_2d,
                         append_entity_path=f"{i}",
                         set_current_time=False,
                     ),
