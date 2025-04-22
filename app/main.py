@@ -51,14 +51,14 @@ def main():
         resized = cv2.resize(image, previous_input_size)
         _, faces = face_detector.detect(resized)
 
-        header = make87.header_from_message(
-            header_cls=Header,
-            message=message,
-            append_entity_path="faces",
-            set_current_time=True,
-        )
-
         if faces is not None and len(faces) > 0:
+            header = make87.header_from_message(
+                header_cls=Header,
+                message=message,
+                append_entity_path="faces",
+                set_current_time=True,
+            )
+
             faces[:, :4] *= scale_matrix  # Fast vectorized scaling
 
             bboxes_2d = Boxes2DAxisAligned(header=header, boxes=[])
