@@ -31,7 +31,7 @@ def main():
 
         # Check if we need to update anything
         if previous_orig_size != (orig_width, orig_height):
-            target_width = 640
+            target_width = 960
             target_height = int((target_width / orig_width) * orig_height)
             previous_input_size = (target_width, target_height)
             previous_orig_size = (orig_width, orig_height)
@@ -56,7 +56,7 @@ def main():
                 header_cls=Header,
                 message=message,
                 append_entity_path="faces",
-                set_current_time=True,
+                set_current_time=False,
             )
 
             faces[:, :4] *= scale_matrix  # Fast vectorized scaling
