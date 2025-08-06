@@ -9,8 +9,8 @@ authors = [
     { name = "Nisse Knudsen", email = "nisse@make87.com" },
 ]
 dependencies = [
-    "make87",
-    "make87_messages",
+    "make87[zenoh,protobuf]>=0.1.2",
+    "make87_messages>=0.2.8",
     "opencv-python-headless>=4.10.0.84,<5.0",
     "numpy",
 ]
