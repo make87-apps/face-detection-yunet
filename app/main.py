@@ -98,10 +98,8 @@ def convert_raw_image_to_opencv(message: ImageRawAny) -> np.ndarray:
         # Handle YUV422 and YUV444 formats
         if message.HasField("yuv422"):
             yuv_data = message.yuv422
-            color_conversion = cv2.COLOR_YUV2BGR
         else:
             yuv_data = message.yuv444
-            color_conversion = cv2.COLOR_YUV2BGR
 
         height, width = yuv_data.height, yuv_data.width
 

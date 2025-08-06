@@ -19,6 +19,13 @@ interfaces:
               properties:
                 handler_type:
                   type: string
+                  enum: [ FIFO, RING ]
+                  default: RING
+                capacity:
+                  type: integer
+                  minimum: 0
+                  description: "Capacity of the handler. For FIFO, this is the maximum number of messages it can hold. For RING, this is the size of the ring buffer."
+                  default: 10
     publishers:
       - name: BOUNDING_BOXES_2D
         spec:
