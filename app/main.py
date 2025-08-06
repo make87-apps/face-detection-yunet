@@ -1,19 +1,33 @@
 import logging
+import time
 from importlib.resources import files
 
 import cv2
 import numpy as np
-import make87
 from make87_messages.geometry.box.box_2d_aligned_pb2 import Box2DAxisAligned
 from make87_messages.geometry.box.boxes_2d_aligned_pb2 import Boxes2DAxisAligned
 from make87_messages.image.compressed.image_jpeg_pb2 import ImageJPEG
 from make87_messages.core.header_pb2 import Header
+from make87.encodings import ProtobufEncoder
+from make87.interfaces.zenoh import ZenohInterface
+
+logging.Formatter.converter = time.gmtime
+logging.basicConfig(
+    format="[%(asctime)sZ %(levelname)s  %(name)s] %(message)s", level=logging.INFO, datefmt="%Y-%m-%dT%H:%M:%S"
+)
 
 
 def main():
-    make87.initialize()
-    image_topic = make87.get_subscriber(name="IMAGE_DATA", message_type=ImageJPEG)
-    bbox_2d_topic = make87.get_publisher(name="BOUNDING_BOXES_2D", message_type=Boxes2DAxisAligned)
+    # Initialize encoders for message types
+    image_encoder = ProtobufEncoder(message_type=ImageJPEG)
+    bbox_encoder = ProtobufEncoder(message_type=Boxes2DAxisAligned)
+
+    # Initialize zenoh interface
+    zenoh_interface = ZenohInterface(name="zenoh")
+
+    # Get subscriber and publisher
+    image_subscriber = zenoh_interface.get_subscriber("IMAGE_DATA")
+    bbox_publisher = zenoh_interface.get_publisher("BOUNDING_BOXES_2D")
 
     model_path = files("app") / "res" / "face_detection_yunet_2023mar.onnx"
     face_detector = cv2.FaceDetectorYN.create(model=str(model_path), config="", input_size=(0, 0))
@@ -23,7 +37,7 @@ def main():
     previous_input_size = None
     scale_matrix = None
 
-    def callback(message: ImageJPEG):
+    def process_message(message: ImageJPEG):
         nonlocal previous_orig_size, previous_input_size, scale_matrix
 
         image = cv2.imdecode(np.frombuffer(message.data, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
@@ -52,36 +66,51 @@ def main():
         _, faces = face_detector.detect(resized)
 
         if faces is not None and len(faces) > 0:
-            header = make87.header_from_message(
-                header_cls=Header,
-                message=message,
-                append_entity_path="faces",
-                set_current_time=False,
-            )
+            # Create header based on original message header
+            header = Header()
+            if message.header:
+                header.CopyFrom(message.header)
+                # Append entity path for faces
+                if header.entity_path:
+                    header.entity_path = header.entity_path + "/faces"
+                else:
+                    header.entity_path = "/faces"
+            else:
+                header.entity_path = "/faces"
+                header.reference_id = 0
+
+            # Don't update timestamp to preserve original timing
 
             faces[:, :4] *= scale_matrix  # Fast vectorized scaling
 
             bboxes_2d = Boxes2DAxisAligned(header=header, boxes=[])
             for i, face in enumerate(faces):
+                # Create header for individual bounding box
+                bbox_header = Header()
+                bbox_header.CopyFrom(header)
+                bbox_header.entity_path = f"{header.entity_path}/{i}"
+
                 bbox_2d = Box2DAxisAligned(
                     x=face[0],
                     y=face[1],
                     width=face[2],
                     height=face[3],
-                    header=make87.header_from_message(
-                        header_cls=Header,
-                        message=bboxes_2d,
-                        append_entity_path=f"{i}",
-                        set_current_time=False,
-                    ),
+                    header=bbox_header,
                 )
                 bboxes_2d.boxes.append(bbox_2d)
 
-            bbox_2d_topic.publish(bboxes_2d)
+            # Encode and publish the message
+            encoded_message = bbox_encoder.encode(bboxes_2d)
+            bbox_publisher.put(payload=encoded_message)
             logging.info(f"Published {len(bboxes_2d.boxes)} bounding boxes")
 
-    image_topic.subscribe(callback)
-    make87.loop()
+    # Subscribe to incoming messages
+    for sample in image_subscriber:
+        try:
+            message = image_encoder.decode(sample.payload.to_bytes())
+            process_message(message)
+        except Exception as e:
+            logging.error(f"Error processing message: {e}")
 
 
 if __name__ == "__main__":
