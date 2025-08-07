@@ -102,7 +102,7 @@ def main():
             # Encode and publish the message
             encoded_message = bbox_encoder.encode(bboxes_2d)
             bbox_publisher.put(payload=encoded_message)
-            logging.info(f"Published {len(bboxes_2d.boxes)} bounding boxes")
+            logging.info(f"Published {len(bboxes_2d.boxes)} bounding boxes for frame with timestamp {header.timestamp.ToDatetime()}")
 
     # Subscribe to incoming messages
     for sample in image_subscriber:
