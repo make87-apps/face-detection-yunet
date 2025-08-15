@@ -1,4 +1,1 @@
 # Face Detection
-
-
-
