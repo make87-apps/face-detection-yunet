@@ -4,8 +4,9 @@ from importlib.resources import files
 
 import cv2
 import numpy as np
-from make87_messages.geometry.box.box_2d_aligned_pb2 import Box2DAxisAligned
-from make87_messages.geometry.box.boxes_2d_aligned_pb2 import Boxes2DAxisAligned
+from make87_messages.detection.box.box_2d_pb2 import Box2DAxisAligned
+from make87_messages.geometry.box.box_2d_aligned_pb2 import Box2DAxisAligned as Box2DAxisAlignedGeometry
+from make87_messages.detection.box.boxes_2d_pb2 import Boxes2DAxisAligned
 from make87_messages.image.compressed.image_jpeg_pb2 import ImageJPEG
 from make87_messages.core.header_pb2 import Header
 from make87.encodings import ProtobufEncoder
@@ -90,12 +91,21 @@ def main():
                 bbox_header.CopyFrom(header)
                 bbox_header.entity_path = f"{header.entity_path}/{i}"
 
+                bbox_geom_header = Header()
+                bbox_geom_header.CopyFrom(bbox_header)
+                bbox_geom_header.entity_path = f"{bbox_header.entity_path}/geometry"
+
                 bbox_2d = Box2DAxisAligned(
-                    x=face[0],
-                    y=face[1],
-                    width=face[2],
-                    height=face[3],
                     header=bbox_header,
+                    geometry=Box2DAxisAlignedGeometry(
+                        x=face[0],
+                        y=face[1],
+                        width=face[2],
+                        height=face[3],
+                        header=bbox_geom_header,
+                    ),
+                    confidence=face[14],
+                    class_id=0,
                 )
                 bboxes_2d.boxes.append(bbox_2d)
 

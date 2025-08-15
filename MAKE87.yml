@@ -29,7 +29,7 @@ interfaces:
     publishers:
       - name: BOUNDING_BOXES_2D
         spec:
-          make87_message: make87_messages.geometry.box.boxes_2d_aligned.Boxes2DAxisAligned
+          make87_message: make87_messages.detection.box.Boxes2DAxisAligned
         encoding: proto
         config:
           type: object
