@@ -88,6 +88,9 @@ def main():
 
     model_path = files("app") / "res" / "face_detection_yunet_2023mar.onnx"
     face_detector = cv2.FaceDetectorYN.create(model=str(model_path), config="", input_size=(0, 0))
+    
+    if face_detector is None:
+        raise RuntimeError(f"Failed to create face detector with model: {model_path}")
 
     # Cache variables
     previous_orig_size = None
@@ -124,7 +127,11 @@ def main():
             logging.debug(f"Updated scale matrix: {scale_matrix}")
 
         resized = cv2.resize(image, previous_input_size)
-        _, faces = face_detector.detect(resized)
+        result, faces = face_detector.detect(resized)
+        
+        if result != 1:
+            logging.warning(f"Face detection failed with result code: {result}")
+            return
 
         if faces is not None and len(faces) > 0:
             # Create header based on original message header
@@ -177,12 +184,30 @@ def main():
             # Encode and publish the message
             encoded_message = bbox_encoder.encode(bboxes_2d)
             bbox_publisher.put(payload=encoded_message)
-            logging.info(f"Published {len(bboxes_2d.boxes)} bounding boxes for frame with timestamp {header.timestamp.ToDatetime()}")
+            
+            # Safe timestamp logging
+            timestamp_str = "unknown"
+            try:
+                if header.timestamp:
+                    timestamp_str = header.timestamp.ToDatetime()
+            except Exception as e:
+                logging.debug(f"Error formatting timestamp: {e}")
+                
+            logging.info(f"Published {len(bboxes_2d.boxes)} bounding boxes for frame with timestamp {timestamp_str}")
 
     # Subscribe to incoming messages
     for sample in image_subscriber:
         try:
-            message = image_encoder.decode(sample.payload.to_bytes())
+            if sample.payload is None:
+                logging.warning("Received sample with None payload")
+                continue
+                
+            payload_bytes = sample.payload.to_bytes()
+            if not payload_bytes:
+                logging.warning("Received empty payload")
+                continue
+                
+            message = image_encoder.decode(payload_bytes)
             process_message(message)
         except Exception as e:
             logging.error(f"Error processing message: {e}")
