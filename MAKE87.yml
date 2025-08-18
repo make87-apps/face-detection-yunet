@@ -9,7 +9,7 @@ interfaces:
     subscribers:
       - name: IMAGE_DATA
         spec:
-          make87_message: make87_messages.image.compressed.ImageJPEG
+          make87_message: make87_messages.image.uncompressed.any.ImageRawAny
         encoding: proto
         config:
           type: object
